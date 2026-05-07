@@ -103,6 +103,7 @@ void UPrismWidgetBase::BuildDefaultLayout()
 void UPrismWidgetBase::RefreshStyle()
 {
 	OnStyleApplied(GetEffectiveStyle());
+	
 }
 
 const FPrismUIWidgetStyle& UPrismWidgetBase::GetEffectiveStyle() const
