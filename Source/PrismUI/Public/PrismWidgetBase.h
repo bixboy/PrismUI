@@ -107,4 +107,7 @@ private:
 
 	/** Dirty flag for style updates. */
 	bool bIsAttributesDirty = true;
+
+	/** Real-time stamp of the last transition tick for accurate smoothing in 3D/variable framerates. */
+	float LastTickTime = -1.0f;
 };

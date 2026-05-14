@@ -141,6 +141,10 @@ void UPrismWidgetBase::StartVisualTransition(float InTargetValue, float InSpeed)
 {
 	TargetVisualAlpha = InTargetValue;
 	TransitionSpeed = InSpeed;
+	
+	// Reset tick time to ensure the first delta is calculated correctly
+	LastTickTime = -1.0f;
+	
 	RequestTransitionTick();
 }
 
@@ -162,18 +166,21 @@ void UPrismWidgetBase::OnVisualsUpdated(float InBlendValue)
 
 void UPrismWidgetBase::InternalTransitionTick()
 {
-	const float DeltaTime = 0.016f;
-	
-	// Delegate custom interpolation to virtual function
-	bool bKeepTicking = TickTransitions(DeltaTime);
+	UWorld* World = GetWorld();
+	if (!World)
+		return;
 
-	// Put the timer to sleep if all logic has converged
+	const float CurrentTime = World->GetTimeSeconds();
+	const float ActualDeltaTime = (LastTickTime > 0.0f) ? (CurrentTime - LastTickTime) : 0.016f;
+	LastTickTime = CurrentTime;
+	
+	const bool bKeepTicking = TickTransitions(ActualDeltaTime);
+	Invalidate(EInvalidateWidgetReason::Paint);
+
 	if (!bKeepTicking)
 	{
-		if (UWorld* World = GetWorld())
-		{
-			World->GetTimerManager().ClearTimer(TransitionTimer);
-		}
+		World->GetTimerManager().ClearTimer(TransitionTimer);
+		LastTickTime = -1.0f;
 	}
 }
 

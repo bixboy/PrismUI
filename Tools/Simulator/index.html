@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrismUI Live Simulator</title>
+    <style>
+        :root {
+            --bg-deep: #0a0b10;
+            --bg-glass: rgba(255, 255, 255, 0.03);
+            --accent-primary: #00f2ff;
+            --accent-danger: #ff4b2b;
+            --accent-warning: #ffb400;
+            --text-main: #e0e0e0;
+            --radius-md: 8px;
+        }
+
+        body {
+            background: var(--bg-deep);
+            color: var(--text-main);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Viewport --- */
+        #viewport {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #1a1c25 0%, #0a0b10 100%);
+            position: relative;
+        }
+
+        #canvas {
+            width: 400px;
+            min-height: 600px;
+            background: var(--bg-glass);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* --- Widget Styles --- */
+        .prism-button {
+            padding: 12px 20px;
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 13px;
+        }
+
+        .prism-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .role-primary { 
+            background: linear-gradient(45deg, #00c6ff, #0072ff);
+            border: none;
+            box-shadow: 0 4px 15px rgba(0, 114, 255, 0.3);
+        }
+
+        .role-danger {
+            background: linear-gradient(45deg, #ff4b2b, #ff416c);
+            border: none;
+        }
+
+        .prism-text {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .parameter-box {
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 2px solid var(--accent-primary);
+            border-radius: 4px;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+
+        .parameter-box-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--accent-primary);
+            opacity: 0.8;
+        }
+
+        .parameter-content {
+            padding-left: 4px;
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 242, 255, 0.2), transparent);
+            margin: 16px 0;
+            width: 100%;
+        }
+
+        .vbox { display: flex; flex-direction: column; gap: 10px; }
+        .hbox { display: flex; flex-direction: row; gap: 10px; }
+
+        /* --- HUD --- */
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.4);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--accent-primary);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+        }
+
+        #status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            margin-right: 8px;
+            box-shadow: 0 0 10px var(--accent-primary);
+        }
+    </style>
+</head>
+<body>
+    <div id="viewport">
+        <div id="hud"><span id="status-dot"></span> PRISM LIVE SIMULATOR (C++ MODE)</div>
+        <div id="canvas">
+            <!-- Widgets will be rendered here -->
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        
+        function renderTree(nodes, parent) {
+            nodes.forEach(node => {
+                const el = document.createElement('div');
+                el.id = node.id;
+                
+                // Class mapping
+                if (node.type.includes('Button')) {
+                    el.className = 'prism-button';
+                    el.innerText = node.props.text || 'Button';
+                    if (node.props.role) el.classList.add(`role-${node.props.role.toLowerCase()}`);
+                } else if (node.type.includes('Text')) {
+                    el.className = 'prism-text';
+                    el.innerText = node.props.text || 'Text Block';
+                } else if (node.type.includes('ParameterBox')) {
+                    el.className = 'parameter-box';
+                    const header = document.createElement('div');
+                    header.className = 'parameter-box-header';
+                    header.innerText = node.props.label || 'PARAMETER';
+                    el.appendChild(header);
+
+                    const contentArea = document.createElement('div');
+                    contentArea.className = 'parameter-content';
+                    el.appendChild(contentArea);
+                    
+                    // Render children into contentArea
+                    if (node.children && node.children.length > 0) {
+                        renderTree(node.children, contentArea);
+                    }
+                    continue; // Skip standard child rendering as we handled it
+                } else if (node.type.includes('Divider')) {
+                    el.className = 'divider';
+                } else if (node.type.includes('VerticalBox')) {
+                    el.className = 'vbox';
+                } else if (node.type.includes('HorizontalBox')) {
+                    el.className = 'hbox';
+                } else {
+                    el.className = 'prism-widget';
+                    el.innerText = `[${node.type}]`;
+                }
+
+                if (node.children && node.children.length > 0) {
+                    renderTree(node.children, el);
+                }
+
+                parent.appendChild(el);
+            });
+        }
+
+        // SSE Connection
+        const eventSource = new EventSource('/events');
+        eventSource.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            console.log('Update received:', data);
+            
+            // Clear and Re-render
+            canvas.innerHTML = '';
+            renderTree(data, canvas);
+            
+            // Visual pulse
+            canvas.style.boxShadow = '0 0 50px rgba(0, 242, 255, 0.2)';
+            setTimeout(() => {
+                canvas.style.boxShadow = '0 20px 50px rgba(0,0,0,0.5)';
+            }, 300);
+        };
+    </script>
+</body>
+</html>
