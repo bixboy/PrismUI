@@ -9,11 +9,36 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Components/Image.h"
+#include "UObject/ConstructorHelpers.h"
+#include "Blueprint/WidgetTree.h"
 
 UPrismUIModelWidget::UPrismUIModelWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	SetIsFocusable(true);
+
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> DefaultMaterial(TEXT("/PrismUI/Material/M_PrismUI_ModelPreview"));
+	if (DefaultMaterial.Succeeded())
+	{
+		BaseMaterial = DefaultMaterial.Object;
+	}
+}
+
+void UPrismUIModelWidget::BuildDefaultLayout()
+{
+	UWidgetTree* Tree = WidgetTree;
+	if (!Tree)
+		return;
+
+	if (!ModelImage)
+	{
+		ModelImage = Tree->ConstructWidget<UImage>(UImage::StaticClass());
+		ModelImage->SetVisibility(ESlateVisibility::Visible);
+		if (!Tree->RootWidget)
+		{
+			Tree->RootWidget = ModelImage;
+		}
+	}
 }
 
 void UPrismUIModelWidget::NativeConstruct()

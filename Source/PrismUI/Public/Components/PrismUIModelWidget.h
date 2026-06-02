@@ -67,6 +67,7 @@ public:
 protected:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual void BuildDefaultLayout() override;
 	
 	// --- Input Handling for Rotation ---
 	virtual bool TickTransitions(float DeltaTime) override;
