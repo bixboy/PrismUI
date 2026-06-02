@@ -1,12 +1,15 @@
 #include "PrismWidgetBase.h"
 #include "Subsystems/PrismUIThemeSubsystem.h"
 #include "Animation/WidgetAnimation.h"
+#include "Components/WidgetComponent.h"
+
 
 
 UPrismWidgetBase::UPrismWidgetBase(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bIsAttributesDirty = true;
 }
+
 
 // --- Lifecycle ---
 
@@ -62,6 +65,7 @@ UPrismWidgetBase* UPrismWidgetBase::SetRole(FName InRole)
 	return this;
 }
 
+
 // --- State Management ---
 
 void UPrismWidgetBase::SetWidgetState(EPrismWidgetState InNewState)
@@ -92,6 +96,8 @@ void UPrismWidgetBase::HandleThemeChanged(UPrismUIThemeData* InNewTheme)
     
 	RefreshStyle();
 }
+
+
 
 #pragma region Visuals and Theme
 
@@ -141,8 +147,6 @@ void UPrismWidgetBase::StartVisualTransition(float InTargetValue, float InSpeed)
 {
 	TargetVisualAlpha = InTargetValue;
 	TransitionSpeed = InSpeed;
-	
-	// Reset tick time to ensure the first delta is calculated correctly
 	LastTickTime = -1.0f;
 	
 	RequestTransitionTick();
@@ -189,7 +193,6 @@ bool UPrismWidgetBase::TickTransitions(float DeltaTime)
 	CurrentVisualAlpha = FMath::FInterpTo(CurrentVisualAlpha, TargetVisualAlpha, DeltaTime, TransitionSpeed);
 	OnVisualsUpdated(CurrentVisualAlpha);
 	
-	// Return true if we are still far from target
 	return !FMath::IsNearlyEqual(CurrentVisualAlpha, TargetVisualAlpha, 0.001f);
 }
 
@@ -197,6 +200,41 @@ const FPrismUIWidgetStyle& UPrismWidgetBase::GetDefaultFallbackStyle()
 {
 	static FPrismUIWidgetStyle Fallback;
 	return Fallback;
+}
+
+#pragma endregion
+
+
+
+#pragma region Getter Setters
+
+UWidgetComponent* UPrismWidgetBase::GetOwningWidgetComponent() const
+{
+	if (CachedOwningWidgetComponent.IsValid())
+		return CachedOwningWidgetComponent.Get();
+
+	UObject* CurrentOuter = GetOuter();
+
+	while (CurrentOuter)
+	{
+		if (UWidgetComponent* WidgetComp = Cast<UWidgetComponent>(CurrentOuter))
+		{
+			CachedOwningWidgetComponent = WidgetComp;
+			return WidgetComp;
+		}
+
+		CurrentOuter = CurrentOuter->GetOuter();
+	}
+
+	return nullptr;
+}
+
+FVector2D UPrismWidgetBase::GetInteractionMovementDelta(const FPointerEvent& InMouseEvent) const
+{
+	if (IsRenderedIn3D() && InMouseEvent.GetPointerIndex() != 0)
+		return InMouseEvent.GetCursorDelta();
+
+	return InMouseEvent.GetCursorDelta();
 }
 
 #pragma endregion

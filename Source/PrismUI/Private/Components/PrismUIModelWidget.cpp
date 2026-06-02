@@ -12,8 +12,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "Blueprint/WidgetTree.h"
 
-UPrismUIModelWidget::UPrismUIModelWidget(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+UPrismUIModelWidget::UPrismUIModelWidget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	SetIsFocusable(true);
 
@@ -194,7 +193,7 @@ FReply UPrismUIModelWidget::NativeOnMouseMove(const FGeometry& InGeometry, const
 {
 	if (bIsDragging && PreviewActor)
 	{
-		FVector2D CursorDelta = InMouseEvent.GetCursorDelta();
+		FVector2D CursorDelta = GetInteractionMovementDelta(InMouseEvent);
 		
 		float YawDelta = CursorDelta.X * DragRotationSpeed * -1.0f;
 		float PitchDelta = CursorDelta.Y * DragRotationSpeed * -1.0f;
