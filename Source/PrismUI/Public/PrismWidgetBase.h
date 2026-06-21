@@ -1,3 +1,4 @@
+// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #pragma once
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
@@ -57,6 +58,7 @@ public:
 protected:
 	
 	// --- Native ---
+	virtual bool Initialize() override;
 	virtual void NativePreConstruct() override;
 	virtual void NativeOnInitialized() override;
 	virtual void NativeConstruct() override;
@@ -70,6 +72,10 @@ protected:
 
 	/** Builds the core C++ UI hierarchy. Override in child classes for programmatic UI. */
 	virtual void BuildDefaultLayout();
+
+	/** Safely triggers layout construction exactly once. */
+	UFUNCTION(BlueprintCallable, Category = "Prism UI | Visuals")
+	void InitializeLayout();
 
 	virtual void OnStyleApplied(const FPrismUIWidgetStyle& InStyleData);
 	
@@ -124,8 +130,10 @@ private:
 	UPROPERTY()
 	mutable TWeakObjectPtr<UWidgetComponent> CachedOwningWidgetComponent;
 
-	/** Dirty flag for style updates. */
 	bool bIsAttributesDirty = true;
 
 	float LastTickTime = -1.0f;
+
+	UPROPERTY(Transient)
+	bool bHasBuiltLayout = false;
 };

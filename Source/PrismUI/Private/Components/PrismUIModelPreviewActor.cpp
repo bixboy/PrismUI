@@ -1,3 +1,4 @@
+// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "Components/PrismUIModelPreviewActor.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Components/SkeletalMeshComponent.h"

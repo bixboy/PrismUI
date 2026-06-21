@@ -1,4 +1,4 @@
-// Copyright Prism UI. All Rights Reserved.
+// Copyright (c) Bixboy, 2026. All Rights Reserved.
 
 #pragma once
 

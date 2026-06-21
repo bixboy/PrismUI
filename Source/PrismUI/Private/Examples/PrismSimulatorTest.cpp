@@ -1,3 +1,4 @@
+// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "Examples/PrismSimulatorTest.h"
 #include "Components/VerticalBox.h"
 #include "Components/TextBlock.h"

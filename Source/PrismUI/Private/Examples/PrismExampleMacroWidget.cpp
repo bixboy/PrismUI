@@ -1,3 +1,4 @@
+// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "Examples/PrismExampleMacroWidget.h"
 #include "Utilities/PrismUI_Builder.h"
 #include "Components/Border.h"
@@ -58,10 +59,20 @@ void UPrismExampleMacroWidget::OnStyleApplied(const FPrismUIWidgetStyle& InStyle
 	PRISM_SET_SCALE(TitleText, 1.2f);
 
 	if (MainBackground)
-		MainBackground->SetBrushColor(InStyleData.CoreBrushes.Normal.TintColor.GetSpecifiedColor());
+	{
+		if (const FLinearColor* BgColor = InStyleData.Colors.Find(EPrismColorToken::BackgroundDeep))
+		{
+			MainBackground->SetBrushColor(*BgColor);
+		}
+	}
 
 	if (TitleText)
-		TitleText->SetFont(InStyleData.Font);
+	{
+		if (const FSlateFontInfo* FontInfo = InStyleData.Typography.Find(EPrismTypographyToken::H1))
+		{
+			TitleText->SetFont(*FontInfo);
+		}
+	}
 }
 
 void UPrismExampleMacroWidget::AddStatusRow(const FText& InLabel, const FText& InValue)

@@ -1,3 +1,4 @@
+// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "Examples/PrismExampleButton.h"
 #include "Components/TextBlock.h"
 #include "Components/Border.h"
@@ -32,11 +33,21 @@ void UPrismExampleButton::OnStyleApplied(const FPrismUIWidgetStyle& InStyleData)
 	// Custom logic when a style is applied:
 	// For example, matching the background color of the border to the style's core brushes
 	if (BackgroundBorder)
-		BackgroundBorder->SetBrushColor(InStyleData.CoreBrushes.Normal.TintColor.GetSpecifiedColor());
+	{
+		if (const FLinearColor* BgColor = InStyleData.Colors.Find(EPrismColorToken::Background))
+		{
+			BackgroundBorder->SetBrushColor(*BgColor);
+		}
+	}
 
 	// Update text font from the design tokens
 	if (TextBlock)
-		TextBlock->SetFont(InStyleData.Font);
+	{
+		if (const FSlateFontInfo* FontInfo = InStyleData.Typography.Find(EPrismTypographyToken::Body))
+		{
+			TextBlock->SetFont(*FontInfo);
+		}
+	}
 }
 
 void UPrismExampleButton::OnStateChanged(EPrismWidgetState InNewState)

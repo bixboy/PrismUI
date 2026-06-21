@@ -1,3 +1,4 @@
+// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "PrismWidgetBase.h"
 #include "Subsystems/PrismUIThemeSubsystem.h"
 #include "Animation/WidgetAnimation.h"
@@ -13,27 +14,44 @@ UPrismWidgetBase::UPrismWidgetBase(const FObjectInitializer& ObjectInitializer) 
 
 // --- Lifecycle ---
 
+bool UPrismWidgetBase::Initialize()
+{
+	bool bResult = Super::Initialize();
+
+	if (!WidgetTree)
+	{
+		WidgetTree = NewObject<UWidgetTree>(this, TEXT("WidgetTree"));
+	}
+
+	InitializeLayout();
+
+	return bResult;
+}
+
 void UPrismWidgetBase::NativePreConstruct()
 {
 	Super::NativePreConstruct();
-	BuildDefaultLayout();
+	InitializeLayout();
 	RefreshStyle();
 }
 
 void UPrismWidgetBase::NativeOnInitialized()
 {
 	Super::NativeOnInitialized();
-	BuildDefaultLayout();
+	InitializeLayout();
 }
 
 void UPrismWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	if (UPrismUIThemeSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UPrismUIThemeSubsystem>())
+	if (ULocalPlayer* LP = GetOwningLocalPlayer())
 	{
-		if (!Subsystem->OnThemeChanged.IsAlreadyBound(this, &UPrismWidgetBase::HandleThemeChanged))
-			Subsystem->OnThemeChanged.AddUniqueDynamic(this, &UPrismWidgetBase::HandleThemeChanged);
+		if (UPrismUIThemeSubsystem* Subsystem = LP->GetSubsystem<UPrismUIThemeSubsystem>())
+		{
+			if (!Subsystem->OnThemeChanged.IsAlreadyBound(this, &UPrismWidgetBase::HandleThemeChanged))
+				Subsystem->OnThemeChanged.AddUniqueDynamic(this, &UPrismWidgetBase::HandleThemeChanged);
+		}
 	}
 
 	RefreshStyle();
@@ -42,8 +60,11 @@ void UPrismWidgetBase::NativeConstruct()
 
 void UPrismWidgetBase::NativeDestruct()
 {
-	if (UPrismUIThemeSubsystem* Subsystem = GetGameInstance()->GetSubsystem<UPrismUIThemeSubsystem>())
-		Subsystem->OnThemeChanged.RemoveAll(this);
+	if (ULocalPlayer* LP = GetOwningLocalPlayer())
+	{
+		if (UPrismUIThemeSubsystem* Subsystem = LP->GetSubsystem<UPrismUIThemeSubsystem>())
+			Subsystem->OnThemeChanged.RemoveAll(this);
+	}
 
 	if (UWorld* World = GetWorld())
 		World->GetTimerManager().ClearTimer(TransitionTimer);
@@ -106,6 +127,15 @@ void UPrismWidgetBase::BuildDefaultLayout()
 	// Virtual stub for child classes to build their C++ UI hierarchy
 }
 
+void UPrismWidgetBase::InitializeLayout()
+{
+	if (bHasBuiltLayout)
+		return;
+
+	bHasBuiltLayout = true;
+	BuildDefaultLayout();
+}
+
 void UPrismWidgetBase::RefreshStyle()
 {
 	OnStyleApplied(GetEffectiveStyle());
@@ -117,15 +147,12 @@ const FPrismUIWidgetStyle& UPrismWidgetBase::GetEffectiveStyle() const
 	if (StyleOverride)
 		return StyleOverride->StyleData;
 
-	if (UWorld* World = GetWorld())
+	if (ULocalPlayer* LP = GetOwningLocalPlayer())
 	{
-		if (UGameInstance* GI = World->GetGameInstance())
+		if (UPrismUIThemeSubsystem* Subsystem = LP->GetSubsystem<UPrismUIThemeSubsystem>())
 		{
-			if (UPrismUIThemeSubsystem* Subsystem = GI->GetSubsystem<UPrismUIThemeSubsystem>())
-			{
-				if (UPrismUIStyle* Style = Subsystem->GetStyleForRole(WidgetRole))
-					return Style->StyleData;
-			}
+			if (UPrismUIStyle* Style = Subsystem->GetStyleForRole(WidgetRole))
+				return Style->StyleData;
 		}
 	}
 

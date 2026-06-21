@@ -1,3 +1,4 @@
+// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #pragma once
 #include "CoreMinimal.h"
 #include "Styling/SlateBrush.h"
@@ -20,32 +21,60 @@ enum class EPrismWidgetState : uint8
 	Selected
 };
 
+/**
+ * EPrismColorToken
+ * Semantic design tokens for colors.
+ */
+UENUM(BlueprintType)
+enum class EPrismColorToken : uint8
+{
+	Background,
+	BackgroundDeep,
+	Surface,
+	SurfaceHighlight,
+	Outline,
+	PrimaryAccent,
+	SecondaryAccent,
+	Danger,
+	Success,
+	TextPrimary,
+	TextSecondary,
+	Transparent
+};
+
+/**
+ * EPrismTypographyToken
+ * Semantic design tokens for text styling.
+ */
+UENUM(BlueprintType)
+enum class EPrismTypographyToken : uint8
+{
+	H1,
+	H2,
+	H3,
+	Body,
+	Caption,
+	Label
+};
+
 USTRUCT(BlueprintType)
 struct PRISMUI_API FPrismUIWidgetStyle
 {
 	GENERATED_BODY()
 
-	// --- LEGACY Brushes (For Backwards Compatibility) ---
+	// --- Theme Colors ---
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Theme | Colors")
+	TMap<EPrismColorToken, FLinearColor> Colors;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Brushes (Legacy)")
-	FSlateBrush Normal;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Brushes (Legacy)")
-	FSlateBrush Hovered;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Brushes (Legacy)")
-	FSlateBrush Pressed;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Brushes (Legacy)")
-	FSlateBrush Disabled;
+	// --- Typography ---
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Theme | Typography")
+	TMap<EPrismTypographyToken, FSlateFontInfo> Typography;
 
 	// --- AAA Brushes ---
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Brushes")
 	FButtonStyle CoreBrushes;
 
 	// --- Shapes ---
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shapes")
 	FVector4 CornerRadii = FVector4(8.f, 8.f, 8.f, 8.f);
 
@@ -54,14 +83,6 @@ struct PRISMUI_API FPrismUIWidgetStyle
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Shapes")
 	float OutlineThickness = 1.0f;
-
-	// --- Typography ---
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Typography")
-	FSlateFontInfo Font;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Typography")
-	FLinearColor TextColor = FLinearColor::White;
 
 	// --- Visuals & Animation ---
 

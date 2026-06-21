@@ -1,3 +1,4 @@
+// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "Components/PrismColorWheel.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Image.h"

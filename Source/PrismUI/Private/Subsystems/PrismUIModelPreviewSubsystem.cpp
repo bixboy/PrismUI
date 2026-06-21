@@ -1,3 +1,4 @@
+// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "Subsystems/PrismUIModelPreviewSubsystem.h"
 #include "Components/PrismUIModelPreviewActor.h"
 #include "Engine/World.h"
