@@ -1,9 +1,9 @@
 // Copyright (c) Bixboy, 2026. All Rights Reserved.
 #pragma once
-
 #include "CoreMinimal.h"
 #include "Blueprint/WidgetTree.h"
 #include "Core/PrismUITypes.h"
+#include "PrismWidgetBase.h"
 #include "Components/PanelWidget.h"
 #include "Components/Border.h"
 #include "Components/TextBlock.h"
@@ -16,11 +16,7 @@
 
 class UPrismThemeSubsystem;
 
-/**
- * FPrismBuilder
- * Fluent Builder API for constructing UI layouts programmatically in C++.
- * Automatically resolves colors and typography from the UPrismThemeSubsystem.
- */
+
 struct PRISMUI_API FPrismBuilder
 {
 public:
@@ -43,12 +39,55 @@ public:
 	FPrismBuilder& AddBackground(FName InRole = TEXT("Primary"), EPrismColorToken InBgToken = EPrismColorToken::Background);
 	FPrismBuilder& AddText(const FText& InText, FName InRole = TEXT("Primary"), EPrismTypographyToken InTypoToken = EPrismTypographyToken::Body, EPrismColorToken InColorToken = EPrismColorToken::TextPrimary);
 
-	// --- Slot Modifiers (Applies to the last added widget) ---
+	// --- Slot Modifiers ---
 	
 	FPrismBuilder& SetPadding(FMargin InPadding);
 	FPrismBuilder& SetHorizontalAlignment(EHorizontalAlignment InHAlign);
 	FPrismBuilder& SetVerticalAlignment(EVerticalAlignment InVAlign);
 	FPrismBuilder& SetSize(FSlateChildSize InSize);
+
+	// --- Data Binding ---
+
+	/**
+	 * Binds the last created widget to an Unreal Multicast Delegate (Event) in a Zero-Tick manner.
+	 * The binding is automatically cleaned up when the WidgetBase is destroyed or returned to the pool.
+	 * 
+	 * Example:
+	 * .AddText(...)
+	 * .BindEvent(PlayerRef->OnHealthChanged, [](UWidget* W, int32 NewHP) { Cast<UTextBlock>(W)->SetText(...); })
+	 */
+	template<typename DelegateType, typename LambdaType>
+	FPrismBuilder& BindEvent(DelegateType& InEvent, LambdaType InCallback)
+	{
+		if (!LastCreatedWidget || !OwnerWidget)
+		{
+			return *this;
+		}
+
+		UPrismWidgetBase* PrismOwner = Cast<UPrismWidgetBase>(OwnerWidget);
+		if (!PrismOwner)
+		{
+			return *this;
+		}
+
+		UWidget* TargetWidget = LastCreatedWidget;
+		TSharedPtr<bool> bIsActive = MakeShared<bool>(true);
+
+		InEvent.AddWeakLambda(PrismOwner, [TargetWidget, InCallback, bIsActive](auto&&... Args)
+		{
+			if (*bIsActive && IsValid(TargetWidget))
+			{
+				InCallback(TargetWidget, Forward<decltype(Args)>(Args)...);
+			}
+		});
+
+		PrismOwner->AddBindingCleanup([bIsActive]()
+		{
+			*bIsActive = false;
+		});
+
+		return *this;
+	}
 
 	// --- Getters ---
 	UWidget* GetLastCreatedWidget() const { return LastCreatedWidget; }

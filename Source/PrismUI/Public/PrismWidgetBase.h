@@ -3,18 +3,14 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "Styles/PrismUIStyle.h"
+#include "Interfaces/PrismPoolableWidget.h"
 #include "PrismWidgetBase.generated.h"
 
 class UPrismUIThemeData;
 
 
-/**
- * UPrismWidgetBase — The foundational base for all Prism UI widgets.
- * Handles automatic role-based styling and theme reactivity.
- * Zero-tick by default.
- */
 UCLASS(Abstract)
-class PRISMUI_API UPrismWidgetBase : public UUserWidget
+class PRISMUI_API UPrismWidgetBase : public UUserWidget, public IPrismPoolableWidget
 {
 	GENERATED_BODY()
 
@@ -39,6 +35,7 @@ public:
 
 
 	// --- State Management ---
+
 	UFUNCTION(BlueprintCallable, Category = "Prism UI | State")
 	void SetWidgetState(EPrismWidgetState InNewState);
 
@@ -55,9 +52,21 @@ public:
 	FVector2D GetInteractionMovementDelta(const FPointerEvent& InMouseEvent) const;
 
 
+	// --- Pooling ---
+
+	virtual void OnAcquiredFromPool_Implementation() override;
+	virtual void OnReleasedToPool_Implementation() override;
+
+
+	// --- Data Binding ---
+
+	void AddBindingCleanup(TFunction<void()> CleanupFunc);
+	void ClearAllBindings();
+
 protected:
 	
 	// --- Native ---
+
 	virtual bool Initialize() override;
 	virtual void NativePreConstruct() override;
 	virtual void NativeOnInitialized() override;
@@ -66,14 +75,12 @@ protected:
 	
 
 	// --- Style ---
-	/** Returns the specific style data to be applied. Resolves: StyleOverride -> RoleMapping -> Null */
+
 	UFUNCTION(BlueprintPure, Category = "Prism UI | Theme")
 	const FPrismUIWidgetStyle& GetEffectiveStyle() const;
 
-	/** Builds the core C++ UI hierarchy. Override in child classes for programmatic UI. */
 	virtual void BuildDefaultLayout();
 
-	/** Safely triggers layout construction exactly once. */
 	UFUNCTION(BlueprintCallable, Category = "Prism UI | Visuals")
 	void InitializeLayout();
 
@@ -81,17 +88,13 @@ protected:
 	
 
 	// --- Animation ---
+
 	UFUNCTION(BlueprintCallable, Category = "Prism UI | Visuals")
 	void StartVisualTransition(float InTargetValue, float InSpeed = 15.0f);
 	
-	/** Starts the unified transition timer if it is not already running. */
 	void RequestTransitionTick();
 
 
-	/** 
-	 * Custom transition logic evaluated on the timer interval. 
-	 * @return True if transitions are still animating, False to sleep the timer.
-	 */
 	virtual bool TickTransitions(float DeltaTime);
 
 	virtual void OnVisualsUpdated(float InBlendValue);
@@ -99,7 +102,6 @@ protected:
 	virtual void OnStateChanged(EPrismWidgetState InNewState);
 
 
-	/** Safely plays a UMG animation if it exists. */
 	UFUNCTION(BlueprintCallable, Category = "Prism UI | Visuals")
 	void PlayUMGAnimationSafe(UWidgetAnimation* InAnim, float InStartAtTime = 0.0f, int32 InNumLoopsToPlay = 1, 
 		EUMGSequencePlayMode::Type InPlayMode = EUMGSequencePlayMode::Forward, float InPlaybackSpeed = 1.0f);
@@ -107,6 +109,8 @@ protected:
 
 protected:
 	
+	TArray<TFunction<void()>> ActiveBindings;
+
 	FTimerHandle TransitionTimer;
 
 	float CurrentVisualAlpha = 0.0f;

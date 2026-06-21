@@ -111,7 +111,56 @@ void UMyCustomPanel::BuildDefaultLayout()
 
 ---
 
-## 5. Animations et États Interactifs
+## 5. Data Binding Zéro-Tick (`BindEvent`)
+
+Au lieu d'utiliser le Property Binding très lourd d'Unreal (basé sur la Reflection) ou de scanner des valeurs dans `NativeTick`, Prism introduit un Data Binding réactif intégré directement au Builder.
+
+Vous pouvez lier un événement C++ (Multicast Delegate) au moment même de la création de votre composant :
+
+```cpp
+Builder.BeginVerticalBox()
+	.AddText(FText::FromString("100"), "Primary", EPrismTypographyToken::H1)
+	
+	// S'abonne à l'événement du joueur de façon totalement sécurisée !
+	.BindEvent(PlayerRef->OnHealthChanged, [](UWidget* Target, int32 NewHP)
+	{
+		if (UTextBlock* Text = Cast<UTextBlock>(Target))
+		{
+			Text->SetText(FText::AsNumber(NewHP));
+		}
+	});
+```
+
+> [!TIP]
+> **Performance Garantie** : Si votre widget est détruit ou rangé dans le Pool, la liaison mémoire `BindEvent` est instantanément court-circuitée pour éviter toute consommation de CPU inutile ou risque de crash.
+
+---
+
+## 6. Optimisation Avancée : Le Widget Pool
+
+Instancier (`CreateWidget`) et détruire des widgets constamment génère de la fragmentation mémoire et des ralentissements dus au Garbage Collection. Prism UI intègre un **Subsystem de Pooling** très performant (`UPrismUIWidgetPoolSubsystem`) propre à chaque joueur local.
+
+`UPrismWidgetBase` implémente nativement `IPrismPoolableWidget`. Il gère donc de manière autonome son nettoyage (désactivation des timers, effacement des Data Bindings) lorsqu'il retourne dans le pool !
+
+**Comment utiliser le pool ?**
+
+```cpp
+// Au lieu de CreateWidget...
+if (UPrismUIWidgetPoolSubsystem* Pool = GetOwningLocalPlayer()->GetSubsystem<UPrismUIWidgetPoolSubsystem>())
+{
+	// 1. Récupérer un widget du pool (ou le créer s'il est vide)
+	UUserWidget* MyWidget = Pool->AcquireWidget(UMyCustomPanel::StaticClass());
+	
+	// ... l'utiliser ...
+	
+	// 2. Quand vous n'en avez plus besoin (le widget disparaît sans être détruit)
+	Pool->ReleaseWidget(MyWidget);
+}
+```
+
+---
+
+## 7. Animations et États Interactifs
 
 Prism UI gère l'état d'interaction de votre widget via `EPrismWidgetState` (Normal, Hovered, Pressed, Selected, Disabled).
 
@@ -155,5 +204,7 @@ void UMyCustomButton::OnVisualsUpdated(float InBlendValue)
 ## En Résumé pour l'équipe
 1. Ne **codez plus aucune couleur en dur** (`FLinearColor`). Utilisez `EPrismColorToken`.
 2. Oubliez `CreateWidget<UTextBlock>`. Utilisez le `FPrismBuilder` pour un code lisible de haut en bas.
-3. Évitez d'utiliser `NativeTick`. Utilisez `StartVisualTransition` pour tout mouvement fluide d'interface.
-4. Laissez `PrismWidgetBase` s'occuper de la mise à jour des thèmes à votre place !
+3. Ne **bindez jamais** vos données dans `NativeTick`. Utilisez `.BindEvent()` via le Builder.
+4. Pour des listes ou des éléments fréquents, utilisez **toujours** le `UPrismUIWidgetPoolSubsystem`.
+5. Évitez d'utiliser `NativeTick`. Utilisez `StartVisualTransition` pour tout mouvement fluide d'interface.
+6. Laissez `PrismWidgetBase` s'occuper de la mise à jour des thèmes à votre place !

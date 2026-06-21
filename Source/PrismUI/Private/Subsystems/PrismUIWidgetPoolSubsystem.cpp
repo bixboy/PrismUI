@@ -1,7 +1,8 @@
 // Copyright (c) Bixboy, 2026. All Rights Reserved.
-
 #include "Subsystems/PrismUIWidgetPoolSubsystem.h"
 #include "Blueprint/UserWidget.h"
+#include "Interfaces/PrismPoolableWidget.h"
+
 
 void UPrismUIWidgetPoolSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -27,14 +28,25 @@ UUserWidget* UPrismUIWidgetPoolSubsystem::AcquireWidget(TSubclassOf<UUserWidget>
 		if (IsValid(RecycledWidget))
 		{
 			RecycledWidget->SetVisibility(ESlateVisibility::Visible);
+			
+			if (RecycledWidget->Implements<UPrismPoolableWidget>())
+			{
+				IPrismPoolableWidget::Execute_OnAcquiredFromPool(RecycledWidget);
+			}
+
 			UE_LOG(LogTemp, Display, TEXT("PrismUI: Reusing widget from pool: %s"), *InWidgetClass->GetName());
 			return RecycledWidget;
 		}
 	}
 
-	// Pool empty or contains invalid entries, create brand new
-	UUserWidget* NewWidget = CreateWidget<UUserWidget>(GetGameInstance(), InWidgetClass);
+	APlayerController* PC = GetLocalPlayer()->GetPlayerController(GetWorld());
+	UUserWidget* NewWidget = CreateWidget<UUserWidget>(PC, InWidgetClass);
 	
+	if (NewWidget && NewWidget->Implements<UPrismPoolableWidget>())
+	{
+		IPrismPoolableWidget::Execute_OnAcquiredFromPool(NewWidget);
+	}
+
 	UE_LOG(LogTemp, Display, TEXT("PrismUI: Pool empty. Creating new widget: %s"), *InWidgetClass->GetName());
 	
 	return NewWidget;
@@ -45,7 +57,11 @@ void UPrismUIWidgetPoolSubsystem::ReleaseWidget(UUserWidget* InWidget)
 	if (!InWidget)
 		return;
 
-	// CRITICAL: We DO NOT call RemoveFromParent() to preserve Slot constraints.
+	if (InWidget->Implements<UPrismPoolableWidget>())
+	{
+		IPrismPoolableWidget::Execute_OnReleasedToPool(InWidget);
+	}
+
 	InWidget->SetVisibility(ESlateVisibility::Collapsed);
 
 	const TSubclassOf<UUserWidget> WidgetClass = InWidget->GetClass();

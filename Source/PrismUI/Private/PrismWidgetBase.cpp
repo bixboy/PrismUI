@@ -60,6 +60,8 @@ void UPrismWidgetBase::NativeConstruct()
 
 void UPrismWidgetBase::NativeDestruct()
 {
+	ClearAllBindings();
+
 	if (ULocalPlayer* LP = GetOwningLocalPlayer())
 	{
 		if (UPrismUIThemeSubsystem* Subsystem = LP->GetSubsystem<UPrismUIThemeSubsystem>())
@@ -125,6 +127,43 @@ void UPrismWidgetBase::HandleThemeChanged(UPrismUIThemeData* InNewTheme)
 void UPrismWidgetBase::BuildDefaultLayout()
 {
 	// Virtual stub for child classes to build their C++ UI hierarchy
+}
+
+void UPrismWidgetBase::OnAcquiredFromPool_Implementation()
+{
+	CurrentVisualAlpha = 0.0f;
+	TargetVisualAlpha = 0.0f;
+	SetWidgetState(EPrismWidgetState::Normal);
+}
+
+void UPrismWidgetBase::OnReleasedToPool_Implementation()
+{
+	ClearAllBindings();
+
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(TransitionTimer);
+	}
+}
+
+void UPrismWidgetBase::AddBindingCleanup(TFunction<void()> CleanupFunc)
+{
+	if (CleanupFunc)
+	{
+		ActiveBindings.Add(MoveTemp(CleanupFunc));
+	}
+}
+
+void UPrismWidgetBase::ClearAllBindings()
+{
+	for (const TFunction<void()>& CleanupFunc : ActiveBindings)
+	{
+		if (CleanupFunc)
+		{
+			CleanupFunc();
+		}
+	}
+	ActiveBindings.Empty();
 }
 
 void UPrismWidgetBase::InitializeLayout()

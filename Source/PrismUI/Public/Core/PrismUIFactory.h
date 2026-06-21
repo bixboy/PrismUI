@@ -30,7 +30,15 @@ public:
 		if (!World)
 			return nullptr;
 
-		UPrismUIWidgetPoolSubsystem* Pool = World->GetGameInstance()->GetSubsystem<UPrismUIWidgetPoolSubsystem>();
-		return Cast<UPrismButtonBase>(Pool->AcquireWidget(InClass));
+		ULocalPlayer* LP = World->GetFirstLocalPlayerFromController();
+		if (!LP)
+			return nullptr;
+
+		if (UPrismUIWidgetPoolSubsystem* Pool = LP->GetSubsystem<UPrismUIWidgetPoolSubsystem>())
+		{
+			return Cast<UPrismButtonBase>(Pool->AcquireWidget(InClass));
+		}
+		
+		return nullptr;
 	}
 };
