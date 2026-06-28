@@ -127,10 +127,18 @@ void UPrismUIModelWidget::UpdatePreviewActor()
 
 	if (SkeletalMesh)
 	{
+		if (RenderTarget)
+		{
+			PreviewActor->SetCaptureRenderTarget(RenderTarget);
+		}
 		PreviewActor->SetupForSkeletalMesh(SkeletalMesh, AnimationAsset, bPlayAnimation);
 	}
 	else if (StaticMesh)
 	{
+		if (RenderTarget)
+		{
+			PreviewActor->SetCaptureRenderTarget(RenderTarget);
+		}
 		PreviewActor->SetupForStaticMesh(StaticMesh);
 	}
 	else
