@@ -1,4 +1,3 @@
-// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "Examples/PrismExampleButton.h"
 #include "Components/TextBlock.h"
 #include "Components/Border.h"

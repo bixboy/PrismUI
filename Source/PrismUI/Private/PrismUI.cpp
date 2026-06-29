@@ -1,4 +1,3 @@
-// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "PrismUI.h"
 
 #define LOCTEXT_NAMESPACE "FPrismUIModule"

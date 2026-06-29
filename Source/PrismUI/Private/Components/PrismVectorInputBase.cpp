@@ -1,4 +1,3 @@
-// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "Components/PrismVectorInputBase.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/EditableTextBox.h"

@@ -1,4 +1,3 @@
-// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "Components/PrismUIModelWidget.h"
 #include "Components/PrismUIModelPreviewActor.h"
 #include "Subsystems/PrismUIModelPreviewSubsystem.h"
@@ -45,6 +44,8 @@ void UPrismUIModelWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	TargetZoomOffset = CameraOffset.X;
+
 	UWorld* World = GetWorld();
 	if (!World)
 		return;
@@ -56,8 +57,8 @@ void UPrismUIModelWidget::NativeConstruct()
 		return;
 	}
 
-	int32 ResolutionX = 512;
-	int32 ResolutionY = 512;
+	int32 ResolutionX = FMath::RoundToInt(PreviewResolution.X);
+	int32 ResolutionY = FMath::RoundToInt(PreviewResolution.Y);
 
 	UTextureRenderTarget2D* LocalRT = nullptr;
 	PreviewActor = PreviewSubsystem->AcquirePreviewActor(ResolutionX, ResolutionY, LocalRT);
@@ -207,12 +208,28 @@ FReply UPrismUIModelWidget::NativeOnMouseMove(const FGeometry& InGeometry, const
 		float YawDelta = CursorDelta.X * DragRotationSpeed * -1.0f;
 		float PitchDelta = CursorDelta.Y * DragRotationSpeed * -1.0f;
 
-		PreviewActor->AddModelRotation(FRotator(PitchDelta, YawDelta, 0.0f));
+		CurrentRotationVelocity += FVector2D(YawDelta, PitchDelta);
+		RequestTransitionTick();
 
 		return FReply::Handled();
 	}
 
 	return Super::NativeOnMouseMove(InGeometry, InMouseEvent);
+}
+
+FReply UPrismUIModelWidget::NativeOnMouseWheel(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	if (PreviewActor && !bAutoFrameModel)
+	{
+		float ScrollDelta = InMouseEvent.GetWheelDelta();
+		TargetZoomOffset += ScrollDelta * ZoomSpeed;
+		TargetZoomOffset = FMath::Clamp(TargetZoomOffset, ZoomLimits.X, ZoomLimits.Y);
+		
+		RequestTransitionTick();
+		return FReply::Handled();
+	}
+
+	return Super::NativeOnMouseWheel(InGeometry, InMouseEvent);
 }
 
 FReply UPrismUIModelWidget::NativeOnMouseButtonDoubleClick(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -230,6 +247,22 @@ FReply UPrismUIModelWidget::NativeOnMouseButtonDoubleClick(const FGeometry& InGe
 bool UPrismUIModelWidget::TickTransitions(float DeltaTime)
 {
 	bool bIsAnimating = Super::TickTransitions(DeltaTime);
+
+	// Zoom Interpolation
+	if (PreviewActor && !bAutoFrameModel && !FMath::IsNearlyEqual(CameraOffset.X, TargetZoomOffset, 0.1f))
+	{
+		CameraOffset.X = FMath::FInterpTo(CameraOffset.X, TargetZoomOffset, DeltaTime, 10.0f);
+		PreviewActor->SetCameraOffset(CameraOffset);
+		bIsAnimating = true;
+	}
+
+	// Rotation Inertia
+	if (PreviewActor && !CurrentRotationVelocity.IsNearlyZero(0.1f))
+	{
+		PreviewActor->AddModelRotation(FRotator(CurrentRotationVelocity.Y, CurrentRotationVelocity.X, 0.0f));
+		CurrentRotationVelocity = FMath::Vector2DInterpTo(CurrentRotationVelocity, FVector2D::ZeroVector, DeltaTime, RotationFriction);
+		bIsAnimating = true;
+	}
 
 	if (bIsResettingRotation && PreviewActor)
 	{

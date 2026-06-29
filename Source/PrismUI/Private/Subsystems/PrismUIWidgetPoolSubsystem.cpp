@@ -1,4 +1,3 @@
-// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "Subsystems/PrismUIWidgetPoolSubsystem.h"
 #include "Blueprint/UserWidget.h"
 #include "Interfaces/PrismPoolableWidget.h"

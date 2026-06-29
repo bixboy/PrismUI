@@ -1,4 +1,3 @@
-// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #pragma once
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -7,7 +6,7 @@
 class USceneCaptureComponent2D;
 class USkeletalMeshComponent;
 class UStaticMeshComponent;
-class UDirectionalLightComponent;
+class USpotLightComponent;
 class USkyLightComponent;
 class UTextureRenderTarget2D;
 
@@ -27,6 +26,9 @@ public:
 	void SetupForSkeletalMesh(class USkeletalMesh* InMesh, class UAnimationAsset* InAnimAsset = nullptr, bool bPlayAnim = false);
 
 	void SetCaptureRenderTarget(UTextureRenderTarget2D* InRenderTarget);
+
+	/** Gets or creates the cached render target with the specified dimensions. */
+	UTextureRenderTarget2D* GetOrCreateRenderTarget(int32 InWidth, int32 InHeight);
 
 
 	/** Prepares the actor to be returned to the pool (hides meshes, stops capture). */
@@ -67,10 +69,13 @@ private:
 	TObjectPtr<USkeletalMeshComponent> SkeletalMeshComp;
 
 	UPROPERTY(VisibleAnywhere, Category = "Prism UI | Preview")
-	TObjectPtr<UDirectionalLightComponent> DirectionalLight;
+	TObjectPtr<USpotLightComponent> SpotLight;
 	
 	UPROPERTY(VisibleAnywhere, Category = "Prism UI | Preview")
 	TObjectPtr<USkyLightComponent> SkyLight;
+
+	UPROPERTY()
+	TObjectPtr<UTextureRenderTarget2D> CachedRenderTarget;
 
 	bool bIsAnimated = false;
 	

@@ -1,9 +1,8 @@
-// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "Components/PrismUIModelPreviewActor.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Components/DirectionalLightComponent.h"
+#include "Components/SpotLightComponent.h"
 #include "Components/SkyLightComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
 
@@ -25,10 +24,12 @@ APrismUIModelPreviewActor::APrismUIModelPreviewActor()
 	SceneCapture->ShowFlags.SetFog(false);
 	SceneCapture->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDR;
 
-	DirectionalLight = CreateDefaultSubobject<UDirectionalLightComponent>(TEXT("DirectionalLight"));
-	DirectionalLight->SetupAttachment(RootComponent);
-	DirectionalLight->SetRelativeRotation(FRotator(-45.f, 45.f, 0.f));
-	DirectionalLight->Intensity = 3.0f;
+	SpotLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("SpotLight"));
+	SpotLight->SetupAttachment(RootComponent);
+	SpotLight->SetRelativeLocation(FVector(-200.f, -200.f, 200.f));
+	SpotLight->SetRelativeRotation(FRotator(-45.f, 45.f, 0.f));
+	SpotLight->Intensity = 5000.f;
+	SpotLight->AttenuationRadius = 2000.f;
 	
 	SkyLight = CreateDefaultSubobject<USkyLightComponent>(TEXT("SkyLight"));
 	SkyLight->SetupAttachment(RootComponent);
@@ -137,6 +138,26 @@ void APrismUIModelPreviewActor::SetCaptureRenderTarget(UTextureRenderTarget2D* I
 		SceneCapture->TextureTarget = InRenderTarget;
 		bNeedsOneShotCapture = true;
 	}
+}
+
+UTextureRenderTarget2D* APrismUIModelPreviewActor::GetOrCreateRenderTarget(int32 InWidth, int32 InHeight)
+{
+	if (!CachedRenderTarget)
+	{
+		CachedRenderTarget = NewObject<UTextureRenderTarget2D>(this);
+		CachedRenderTarget->RenderTargetFormat = ETextureRenderTargetFormat::RTF_RGBA8;
+		CachedRenderTarget->ClearColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		CachedRenderTarget->bAutoGenerateMips = false;
+	}
+
+	if (CachedRenderTarget->SizeX != InWidth || CachedRenderTarget->SizeY != InHeight)
+	{
+		CachedRenderTarget->InitAutoFormat(InWidth, InHeight);
+		CachedRenderTarget->UpdateResourceImmediate(true);
+	}
+
+	SetCaptureRenderTarget(CachedRenderTarget);
+	return CachedRenderTarget;
 }
 
 void APrismUIModelPreviewActor::DeactivateStudio()

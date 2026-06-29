@@ -1,4 +1,3 @@
-// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #pragma once
 #include "CoreMinimal.h"
 #include "PrismWidgetBase.h"
@@ -57,6 +56,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prism UI | Model Preview")
 	float DragRotationSpeed = 1.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prism UI | Model Preview")
+	float RotationFriction = 5.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prism UI | Model Preview")
+	FVector2D PreviewResolution = FVector2D(512.0f, 512.0f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prism UI | Model Preview")
+	float ZoomSpeed = 50.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Prism UI | Model Preview")
+	FVector2D ZoomLimits = FVector2D(-1000.0f, -50.0f);
+
 	// --- API ---
 
 	UFUNCTION(BlueprintCallable, Category = "Prism UI | Model Preview")
@@ -75,6 +86,7 @@ protected:
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual FReply NativeOnMouseWheel(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseButtonDoubleClick(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 
 	UPROPERTY(meta = (BindWidgetOptional))
@@ -93,6 +105,8 @@ private:
 	TObjectPtr<UMaterialInstanceDynamic> PreviewMaterial;
 
 	bool bIsDragging = false;
-
 	bool bIsResettingRotation = false;
+
+	FVector2D CurrentRotationVelocity = FVector2D::ZeroVector;
+	float TargetZoomOffset = 0.0f;
 };

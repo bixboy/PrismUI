@@ -1,4 +1,3 @@
-// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "Utilities/PrismBuilder.h"
 #include "Subsystems/PrismUIThemeSubsystem.h"
 #include "Engine/LocalPlayer.h"

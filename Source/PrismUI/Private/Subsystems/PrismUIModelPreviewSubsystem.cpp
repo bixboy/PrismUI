@@ -1,4 +1,3 @@
-// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "Subsystems/PrismUIModelPreviewSubsystem.h"
 #include "Components/PrismUIModelPreviewActor.h"
 #include "Engine/World.h"
@@ -71,16 +70,7 @@ APrismUIModelPreviewActor* UPrismUIModelPreviewSubsystem::AcquirePreviewActor(in
 	if (AcquiredActor)
 	{
 		ActiveActors.Add(AcquiredActor);
-
-		OutRenderTarget = NewObject<UTextureRenderTarget2D>(this);
-		check(OutRenderTarget);
-		OutRenderTarget->RenderTargetFormat = ETextureRenderTargetFormat::RTF_RGBA8;
-		OutRenderTarget->ClearColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.0f);
-		OutRenderTarget->bAutoGenerateMips = false;
-		OutRenderTarget->InitAutoFormat(InWidth, InHeight);
-		OutRenderTarget->UpdateResourceImmediate(true);
-
-		AcquiredActor->SetCaptureRenderTarget(OutRenderTarget);
+		OutRenderTarget = AcquiredActor->GetOrCreateRenderTarget(InWidth, InHeight);
 	}
 
 	return AcquiredActor;

@@ -1,4 +1,3 @@
-// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "Examples/PrismExampleMacroWidget.h"
 #include "Utilities/PrismUI_Builder.h"
 #include "Components/Border.h"

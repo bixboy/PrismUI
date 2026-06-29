@@ -1,4 +1,3 @@
-// Copyright (c) Bixboy, 2026. All Rights Reserved.
 #include "PrismWidgetBase.h"
 #include "Subsystems/PrismUIThemeSubsystem.h"
 #include "Animation/WidgetAnimation.h"
