@@ -96,7 +96,13 @@ void UPrismToggleSwitch::UpdateThumbPosition(float InAlpha)
 	if (UOverlaySlot* ThumbSlot = RootOverlay ? Cast<UOverlaySlot>(ThumbBorder->GetParent()->Slot) : nullptr)
 	{
         FMargin NewPadding;
-        const float TotalSlideWidth = 22.0f;
+        float TrackWidth = 44.0f;
+        if (TrackBorder && TrackBorder->GetCachedGeometry().GetLocalSize().X > 0.f)
+        {
+            TrackWidth = TrackBorder->GetCachedGeometry().GetLocalSize().X;
+        }
+        
+        const float TotalSlideWidth = FMath::Max(0.0f, TrackWidth - 22.0f);
         
         NewPadding.Left = 2.0f + (InAlpha * TotalSlideWidth);
         NewPadding.Top = 2.0f;
