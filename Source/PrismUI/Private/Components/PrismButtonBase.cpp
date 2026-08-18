@@ -128,6 +128,15 @@ void UPrismButtonBase::SetIsVertical(bool bInIsVertical)
 	RefreshStyle();
 }
 
+void UPrismButtonBase::SetContentPadding(FMargin InPadding)
+{
+	ContentPadding = InPadding;
+	if (BackgroundBorder)
+	{
+		BackgroundBorder->SetPadding(ContentPadding);
+	}
+}
+
 void UPrismButtonBase::HandleClick()
 {
 	OnClicked.Broadcast(this);
