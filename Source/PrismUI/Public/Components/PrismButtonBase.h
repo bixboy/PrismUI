@@ -67,6 +67,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Prism UI | Content")
 	virtual void SetIsVertical(bool bInIsVertical);
 
+	UFUNCTION(BlueprintCallable, Category = "Prism UI | Content")
+	virtual void SetContentPadding(FMargin InPadding);
+
 protected:
 	virtual void HandleClick();
 
