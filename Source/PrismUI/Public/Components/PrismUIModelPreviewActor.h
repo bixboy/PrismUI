@@ -1,15 +1,16 @@
 #pragma once
+
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "PrismUIModelPreviewActor.generated.h"
 
-class USceneCaptureComponent2D;
-class USkeletalMeshComponent;
 class UStaticMeshComponent;
+class USkeletalMeshComponent;
+class USceneCaptureComponent2D;
+class UTextureRenderTarget2D;
 class USpotLightComponent;
 class USkyLightComponent;
-class UTextureRenderTarget2D;
-
+class UAnimationAsset;
 
 UCLASS(NotBlueprintable)
 class PRISMUI_API APrismUIModelPreviewActor : public AActor
@@ -19,43 +20,44 @@ class PRISMUI_API APrismUIModelPreviewActor : public AActor
 public:
 	APrismUIModelPreviewActor();
 
+	// --- Lifecycle ---
+	virtual void Tick(float DeltaTime) override;
+
 	// --- Studio Setup ---
+	void SetupForStaticMesh(UStaticMesh* InMesh);
+	void SetupForSkeletalMesh(USkeletalMesh* InMesh, UAnimationAsset* InAnimAsset = nullptr, bool bPlayAnim = false);
+	void DeactivateStudio();
 
-	void SetupForStaticMesh(class UStaticMesh* InMesh);
-
-	void SetupForSkeletalMesh(class USkeletalMesh* InMesh, class UAnimationAsset* InAnimAsset = nullptr, bool bPlayAnim = false);
-
+	// --- Render Target Management ---
 	void SetCaptureRenderTarget(UTextureRenderTarget2D* InRenderTarget);
-
 	/** Gets or creates the cached render target with the specified dimensions. */
 	UTextureRenderTarget2D* GetOrCreateRenderTarget(int32 InWidth, int32 InHeight);
 
-
-	/** Prepares the actor to be returned to the pool (hides meshes, stops capture). */
-	void DeactivateStudio();
-
-	/** Rotates the active mesh by a given delta (used for UI dragging). */
+	// --- Transform & Camera Helpers ---
 	void AddModelRotation(const FRotator& InDeltaRotation);
-
-	/** Sets the absolute rotation of the model. */
 	void SetModelRotation(const FRotator& InRotation);
-
 	/** Sets the absolute rotation using a Quaternion (better for interpolation). */
 	void SetModelRotationQuat(const FQuat& InQuat);
-
 	FQuat GetModelRotation() const;
+	
+	float GetModelBoundsRadius() const;
 
 	void AutoFrameMesh();
-	
 	void SetFOV(float InFOV);
 	
 	void SetCameraOffset(const FVector& InOffset);
+	FVector GetCameraOffset() const;
 
 protected:
+	// --- Lifecycle ---
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
+
+	// --- Internal Helpers ---
+	void RequestCapture();
+	UPrimitiveComponent* GetActiveMeshComponent() const;
 
 private:
+	// --- Components ---
 	UPROPERTY(VisibleAnywhere, Category = "Prism UI | Preview")
 	TObjectPtr<USceneComponent> SceneRoot;
 
@@ -74,10 +76,10 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Prism UI | Preview")
 	TObjectPtr<USkyLightComponent> SkyLight;
 
-	UPROPERTY()
+	// --- State ---
+	UPROPERTY(Transient)
 	TObjectPtr<UTextureRenderTarget2D> CachedRenderTarget;
 
 	bool bIsAnimated = false;
-	
 	bool bNeedsOneShotCapture = false;
 };

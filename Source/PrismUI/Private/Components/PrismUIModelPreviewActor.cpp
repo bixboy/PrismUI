@@ -6,7 +6,6 @@
 #include "Components/SkyLightComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
 
-
 APrismUIModelPreviewActor::APrismUIModelPreviewActor()
 {
 	PrimaryActorTick.bCanEverTick = true;
@@ -48,6 +47,8 @@ APrismUIModelPreviewActor::APrismUIModelPreviewActor()
 	SceneCapture->ShowOnlyActors.Add(this);
 }
 
+// --- Lifecycle ---
+
 void APrismUIModelPreviewActor::BeginPlay()
 {
 	Super::BeginPlay();
@@ -67,6 +68,8 @@ void APrismUIModelPreviewActor::Tick(float DeltaTime)
 	}
 }
 
+// --- Studio Setup ---
+
 void APrismUIModelPreviewActor::SetupForStaticMesh(UStaticMesh* InMesh)
 {
 	if (!InMesh)
@@ -80,17 +83,11 @@ void APrismUIModelPreviewActor::SetupForStaticMesh(UStaticMesh* InMesh)
 
 	StaticMeshComp->SetStaticMesh(InMesh);
 	StaticMeshComp->SetVisibility(true);
-	
 	StaticMeshComp->SetRelativeTransform(FTransform::Identity);
 
 	bIsAnimated = false;
 	SetActorTickEnabled(false);
-	bNeedsOneShotCapture = true;
-	
-	if (SceneCapture && SceneCapture->TextureTarget)
-	{
-		SceneCapture->CaptureScene();
-	}
+	RequestCapture();
 }
 
 void APrismUIModelPreviewActor::SetupForSkeletalMesh(USkeletalMesh* InMesh, UAnimationAsset* InAnimAsset, bool bPlayAnim)
@@ -106,7 +103,6 @@ void APrismUIModelPreviewActor::SetupForSkeletalMesh(USkeletalMesh* InMesh, UAni
 
 	SkeletalMeshComp->SetSkeletalMesh(InMesh);
 	SkeletalMeshComp->SetVisibility(true);
-	
 	SkeletalMeshComp->SetRelativeTransform(FTransform::Identity);
 
 	if (InAnimAsset && bPlayAnim)
@@ -118,46 +114,12 @@ void APrismUIModelPreviewActor::SetupForSkeletalMesh(USkeletalMesh* InMesh, UAni
 	}
 	else
 	{
-		SkeletalMeshComp->SetAnimationMode(EAnimationMode::AnimationBlueprint); // Or keep default
+		SkeletalMeshComp->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 		SkeletalMeshComp->Stop();
 		bIsAnimated = false;
 		SetActorTickEnabled(false);
-		bNeedsOneShotCapture = true;
-		
-		if (SceneCapture && SceneCapture->TextureTarget)
-		{
-			SceneCapture->CaptureScene();
-		}
+		RequestCapture();
 	}
-}
-
-void APrismUIModelPreviewActor::SetCaptureRenderTarget(UTextureRenderTarget2D* InRenderTarget)
-{
-	if (SceneCapture)
-	{
-		SceneCapture->TextureTarget = InRenderTarget;
-		bNeedsOneShotCapture = true;
-	}
-}
-
-UTextureRenderTarget2D* APrismUIModelPreviewActor::GetOrCreateRenderTarget(int32 InWidth, int32 InHeight)
-{
-	if (!CachedRenderTarget)
-	{
-		CachedRenderTarget = NewObject<UTextureRenderTarget2D>(this);
-		CachedRenderTarget->RenderTargetFormat = ETextureRenderTargetFormat::RTF_RGBA8;
-		CachedRenderTarget->ClearColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.0f);
-		CachedRenderTarget->bAutoGenerateMips = false;
-	}
-
-	if (CachedRenderTarget->SizeX != InWidth || CachedRenderTarget->SizeY != InHeight)
-	{
-		CachedRenderTarget->InitAutoFormat(InWidth, InHeight);
-		CachedRenderTarget->UpdateResourceImmediate(true);
-	}
-
-	SetCaptureRenderTarget(CachedRenderTarget);
-	return CachedRenderTarget;
 }
 
 void APrismUIModelPreviewActor::DeactivateStudio()
@@ -184,28 +146,53 @@ void APrismUIModelPreviewActor::DeactivateStudio()
 	}
 }
 
+// --- Render Target Management ---
+
+void APrismUIModelPreviewActor::SetCaptureRenderTarget(UTextureRenderTarget2D* InRenderTarget)
+{
+	if (SceneCapture)
+	{
+		SceneCapture->TextureTarget = InRenderTarget;
+		RequestCapture();
+	}
+}
+
+UTextureRenderTarget2D* APrismUIModelPreviewActor::GetOrCreateRenderTarget(int32 InWidth, int32 InHeight)
+{
+	if (!CachedRenderTarget)
+	{
+		CachedRenderTarget = NewObject<UTextureRenderTarget2D>(this);
+		CachedRenderTarget->RenderTargetFormat = ETextureRenderTargetFormat::RTF_RGBA8;
+		CachedRenderTarget->ClearColor = FLinearColor(0.0f, 0.0f, 0.0f, 0.0f);
+		CachedRenderTarget->bAutoGenerateMips = false;
+	}
+
+	if (CachedRenderTarget->SizeX != InWidth || CachedRenderTarget->SizeY != InHeight)
+	{
+		CachedRenderTarget->InitAutoFormat(InWidth, InHeight);
+		CachedRenderTarget->UpdateResourceImmediate(true);
+	}
+
+	SetCaptureRenderTarget(CachedRenderTarget);
+	return CachedRenderTarget;
+}
+
+// --- Transform & Camera Helpers ---
+
 void APrismUIModelPreviewActor::AddModelRotation(const FRotator& InDeltaRotation)
 {
 	FQuat YawRot(FVector::UpVector, FMath::DegreesToRadians(InDeltaRotation.Yaw));
 	FQuat PitchRot(FVector::RightVector, FMath::DegreesToRadians(InDeltaRotation.Pitch));
 	FQuat DeltaQuat = YawRot * PitchRot;
 
-	if (StaticMeshComp->IsVisible())
+	if (UPrimitiveComponent* ActiveComp = GetActiveMeshComponent())
 	{
-		StaticMeshComp->AddWorldRotation(DeltaQuat);
-	}
-	else if (SkeletalMeshComp->IsVisible())
-	{
-		SkeletalMeshComp->AddWorldRotation(DeltaQuat);
+		ActiveComp->AddWorldRotation(DeltaQuat);
 	}
 	
 	if (!bIsAnimated)
 	{
-		bNeedsOneShotCapture = true;
-		if (SceneCapture && SceneCapture->TextureTarget && !IsActorTickEnabled())
-		{
-			SceneCapture->CaptureScene();
-		}
+		RequestCapture();
 	}
 }
 
@@ -216,48 +203,41 @@ void APrismUIModelPreviewActor::SetModelRotation(const FRotator& InRotation)
 
 void APrismUIModelPreviewActor::SetModelRotationQuat(const FQuat& InQuat)
 {
-	if (StaticMeshComp->IsVisible())
+	if (UPrimitiveComponent* ActiveComp = GetActiveMeshComponent())
 	{
-		StaticMeshComp->SetWorldRotation(InQuat);
-	}
-	else if (SkeletalMeshComp->IsVisible())
-	{
-		SkeletalMeshComp->SetWorldRotation(InQuat);
+		ActiveComp->SetWorldRotation(InQuat);
 	}
 
 	if (!bIsAnimated)
 	{
-		bNeedsOneShotCapture = true;
-		if (SceneCapture && SceneCapture->TextureTarget && !IsActorTickEnabled())
-		{
-			SceneCapture->CaptureScene();
-		}
+		RequestCapture();
 	}
 }
 
 FQuat APrismUIModelPreviewActor::GetModelRotation() const
 {
-	if (StaticMeshComp->IsVisible())
+	if (UPrimitiveComponent* ActiveComp = GetActiveMeshComponent())
 	{
-		return StaticMeshComp->GetComponentQuat();
-	}
-	else if (SkeletalMeshComp->IsVisible())
-	{
-		return SkeletalMeshComp->GetComponentQuat();
+		return ActiveComp->GetComponentQuat();
 	}
 	return FQuat::Identity;
+}
+
+float APrismUIModelPreviewActor::GetModelBoundsRadius() const
+{
+	if (UPrimitiveComponent* ActiveComp = GetActiveMeshComponent())
+	{
+		return ActiveComp->Bounds.SphereRadius;
+	}
+	return 50.0f;
 }
 
 void APrismUIModelPreviewActor::AutoFrameMesh()
 {
 	FBoxSphereBounds Bounds;
-	if (StaticMeshComp->IsVisible() && StaticMeshComp->GetStaticMesh())
+	if (UPrimitiveComponent* ActiveComp = GetActiveMeshComponent())
 	{
-		Bounds = StaticMeshComp->Bounds;
-	}
-	else if (SkeletalMeshComp->IsVisible() && SkeletalMeshComp->GetSkeletalMeshAsset())
-	{
-		Bounds = SkeletalMeshComp->Bounds;
+		Bounds = ActiveComp->Bounds;
 	}
 	else
 	{
@@ -274,11 +254,7 @@ void APrismUIModelPreviewActor::AutoFrameMesh()
 		FVector NewCameraLocation = LocalOrigin - FVector(Distance, 0.0f, 0.0f);
 		SceneCapture->SetRelativeLocation(NewCameraLocation);
 		
-		bNeedsOneShotCapture = true;
-		if (SceneCapture->TextureTarget && !IsActorTickEnabled())
-		{
-			SceneCapture->CaptureScene();
-		}
+		RequestCapture();
 	}
 }
 
@@ -287,7 +263,7 @@ void APrismUIModelPreviewActor::SetFOV(float InFOV)
 	if (SceneCapture)
 	{
 		SceneCapture->FOVAngle = InFOV;
-		bNeedsOneShotCapture = true;
+		RequestCapture();
 	}
 }
 
@@ -296,6 +272,39 @@ void APrismUIModelPreviewActor::SetCameraOffset(const FVector& InOffset)
 	if (SceneCapture)
 	{
 		SceneCapture->SetRelativeLocation(InOffset);
-		bNeedsOneShotCapture = true;
+		RequestCapture();
 	}
+}
+
+FVector APrismUIModelPreviewActor::GetCameraOffset() const
+{
+	if (SceneCapture)
+	{
+		return SceneCapture->GetRelativeLocation();
+	}
+	return FVector::ZeroVector;
+}
+
+// --- Internal Helpers ---
+
+void APrismUIModelPreviewActor::RequestCapture()
+{
+	bNeedsOneShotCapture = true;
+	if (SceneCapture && SceneCapture->TextureTarget && !IsActorTickEnabled())
+	{
+		SceneCapture->CaptureScene();
+	}
+}
+
+UPrimitiveComponent* APrismUIModelPreviewActor::GetActiveMeshComponent() const
+{
+	if (StaticMeshComp && StaticMeshComp->IsVisible())
+	{
+		return StaticMeshComp;
+	}
+	else if (SkeletalMeshComp && SkeletalMeshComp->IsVisible())
+	{
+		return SkeletalMeshComp;
+	}
+	return nullptr;
 }
