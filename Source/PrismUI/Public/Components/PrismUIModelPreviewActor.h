@@ -9,7 +9,7 @@ class USkeletalMeshComponent;
 class USceneCaptureComponent2D;
 class UTextureRenderTarget2D;
 class USpotLightComponent;
-class USkyLightComponent;
+class UPointLightComponent;
 class UAnimationAsset;
 
 UCLASS(NotBlueprintable)
@@ -55,6 +55,7 @@ protected:
 	// --- Internal Helpers ---
 	void RequestCapture();
 	UPrimitiveComponent* GetActiveMeshComponent() const;
+	void UpdateStudioLights(const FVector& LocalOrigin, float SphereRadius);
 
 private:
 	// --- Components ---
@@ -71,10 +72,10 @@ private:
 	TObjectPtr<USkeletalMeshComponent> SkeletalMeshComp;
 
 	UPROPERTY(VisibleAnywhere, Category = "Prism UI | Preview")
-	TObjectPtr<USpotLightComponent> SpotLight;
+	TObjectPtr<USpotLightComponent> KeyLight;
 	
 	UPROPERTY(VisibleAnywhere, Category = "Prism UI | Preview")
-	TObjectPtr<USkyLightComponent> SkyLight;
+	TObjectPtr<USpotLightComponent> FillLight;
 
 	// --- State ---
 	UPROPERTY(Transient)
