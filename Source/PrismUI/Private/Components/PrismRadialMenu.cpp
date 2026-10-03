@@ -444,8 +444,11 @@ void UPrismRadialMenu::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 
 		if (Segments[i].LabelWidget)
 		{
+			const float Scale = FMath::Lerp(1.0f, 1.06f, Segments[i].HoverProgress);
+			Segments[i].LabelWidget->SetRenderScale(FVector2D(Scale, Scale));
+
 			const FLinearColor TextCol = FMath::Lerp(
-				Segments[i].bIsEnabled ? FLinearColor(0.90f, 0.94f, 0.97f, 0.95f) : FLinearColor(0.45f, 0.50f, 0.55f, 0.5f),
+				Segments[i].bIsEnabled ? FLinearColor(0.96f, 0.98f, 1.0f, 1.0f) : FLinearColor(0.55f, 0.60f, 0.65f, 0.6f),
 				FLinearColor::White,
 				Segments[i].HoverProgress
 			);
