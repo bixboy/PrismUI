@@ -152,14 +152,6 @@ UWidget* UPrismDropdownBase::HandleGenerateWidget(FString Item)
     // Minimalist item generation logic
 	if (!Tree) return nullptr;
 
-	if (GFrameCounter - LastOpeningFrame > 5)
-	{
-		PRISM_CREATE(USizeBox, Empty);
-		Empty->SetHeightOverride(0.f);
-		PRISM_SET_VIS(Empty, Collapsed);
-		return Empty;
-	}
-
 	PRISM_CREATE(UBorder, RowContainer);
 	RowContainer->SetBrushColor(FLinearColor::Transparent);
 	RowContainer->SetPadding(FMargin(12.f, 8.f));
