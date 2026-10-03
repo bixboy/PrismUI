@@ -3,8 +3,9 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SpotLightComponent.h"
-#include "Components/SkyLightComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Kismet/KismetMathLibrary.h"
 
 APrismUIModelPreviewActor::APrismUIModelPreviewActor()
 {
@@ -21,28 +22,46 @@ APrismUIModelPreviewActor::APrismUIModelPreviewActor()
 	SceneCapture->PrimitiveRenderMode = ESceneCapturePrimitiveRenderMode::PRM_UseShowOnlyList;
 	SceneCapture->ShowFlags.SetAtmosphere(false);
 	SceneCapture->ShowFlags.SetFog(false);
+	SceneCapture->ShowFlags.SetEyeAdaptation(false);
 	SceneCapture->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDR;
 
-	SpotLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("SpotLight"));
-	SpotLight->SetupAttachment(RootComponent);
-	SpotLight->SetRelativeLocation(FVector(-200.f, -200.f, 200.f));
-	SpotLight->SetRelativeRotation(FRotator(-45.f, 45.f, 0.f));
-	SpotLight->Intensity = 5000.f;
-	SpotLight->AttenuationRadius = 2000.f;
+	KeyLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("KeyLight"));
+	KeyLight->SetupAttachment(RootComponent);
+	KeyLight->SetRelativeLocation(FVector(-250.f, -160.f, 200.f));
+	KeyLight->SetRelativeRotation(FRotator(-22.f, 32.f, 0.f));
+	KeyLight->Intensity = 6000.f;
+	KeyLight->AttenuationRadius = 4000.f;
+	KeyLight->InnerConeAngle = 45.0f;
+	KeyLight->OuterConeAngle = 70.0f;
+	KeyLight->LightColor = FColor(255, 252, 248);
+	KeyLight->LightingChannels.bChannel0 = false;
+	KeyLight->LightingChannels.bChannel1 = true;
 	
-	SkyLight = CreateDefaultSubobject<USkyLightComponent>(TEXT("SkyLight"));
-	SkyLight->SetupAttachment(RootComponent);
-	SkyLight->Intensity = 1.0f;
+	FillLight = CreateDefaultSubobject<USpotLightComponent>(TEXT("FillLight"));
+	FillLight->SetupAttachment(RootComponent);
+	FillLight->SetRelativeLocation(FVector(-220.f, 160.f, 160.f));
+	FillLight->SetRelativeRotation(FRotator(-18.f, -36.f, 0.f));
+	FillLight->Intensity = 6000.f;
+	FillLight->AttenuationRadius = 4000.f;
+	FillLight->InnerConeAngle = 55.0f;
+	FillLight->OuterConeAngle = 80.0f;
+	FillLight->LightColor = FColor(245, 248, 255);
+	FillLight->LightingChannels.bChannel0 = false;
+	FillLight->LightingChannels.bChannel1 = true;
 
 	StaticMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComp"));
 	StaticMeshComp->SetupAttachment(RootComponent);
 	StaticMeshComp->SetVisibility(false);
 	StaticMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	StaticMeshComp->LightingChannels.bChannel0 = false;
+	StaticMeshComp->LightingChannels.bChannel1 = true;
 	
 	SkeletalMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SkeletalMeshComp"));
 	SkeletalMeshComp->SetupAttachment(RootComponent);
 	SkeletalMeshComp->SetVisibility(false);
 	SkeletalMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SkeletalMeshComp->LightingChannels.bChannel0 = false;
+	SkeletalMeshComp->LightingChannels.bChannel1 = true;
 
 	SceneCapture->ShowOnlyActors.Add(this);
 }
@@ -87,6 +106,7 @@ void APrismUIModelPreviewActor::SetupForStaticMesh(UStaticMesh* InMesh)
 
 	bIsAnimated = false;
 	SetActorTickEnabled(false);
+	AutoFrameMesh();
 	RequestCapture();
 }
 
@@ -104,6 +124,7 @@ void APrismUIModelPreviewActor::SetupForSkeletalMesh(USkeletalMesh* InMesh, UAni
 	SkeletalMeshComp->SetSkeletalMesh(InMesh);
 	SkeletalMeshComp->SetVisibility(true);
 	SkeletalMeshComp->SetRelativeTransform(FTransform::Identity);
+	AutoFrameMesh();
 
 	if (InAnimAsset && bPlayAnim)
 	{
@@ -254,7 +275,31 @@ void APrismUIModelPreviewActor::AutoFrameMesh()
 		FVector NewCameraLocation = LocalOrigin - FVector(Distance, 0.0f, 0.0f);
 		SceneCapture->SetRelativeLocation(NewCameraLocation);
 		
+		UpdateStudioLights(LocalOrigin, Bounds.SphereRadius);
+
 		RequestCapture();
+	}
+}
+
+void APrismUIModelPreviewActor::UpdateStudioLights(const FVector& LocalOrigin, float SphereRadius)
+{
+	float SafeRadius = FMath::Max(SphereRadius, 40.0f);
+	float Attenuation = FMath::Max(SafeRadius * 5.0f, 2500.0f);
+
+	if (KeyLight)
+	{
+		FVector KeyLoc = LocalOrigin + FVector(-SafeRadius * 2.2f, -SafeRadius * 1.5f, SafeRadius * 1.1f);
+		KeyLight->SetRelativeLocation(KeyLoc);
+		KeyLight->SetRelativeRotation(UKismetMathLibrary::FindLookAtRotation(KeyLoc, LocalOrigin));
+		KeyLight->AttenuationRadius = Attenuation;
+	}
+
+	if (FillLight)
+	{
+		FVector FillLoc = LocalOrigin + FVector(-SafeRadius * 2.0f, SafeRadius * 1.5f, SafeRadius * 0.5f);
+		FillLight->SetRelativeLocation(FillLoc);
+		FillLight->SetRelativeRotation(UKismetMathLibrary::FindLookAtRotation(FillLoc, LocalOrigin));
+		FillLight->AttenuationRadius = Attenuation;
 	}
 }
 
